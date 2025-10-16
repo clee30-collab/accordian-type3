@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cursor Trail Rectangles</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      background: white;
+      overflow: hidden;
+      cursor: crosshair;
+    }
+
+    .rect {
+      position: absolute;
+      width: 100px;
+      height: 150px;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      transition: opacity 0.7s ease ;
+    }
+
+    .border-rect {
+      border: 2px solid black;
+      background: transparent;
+    }
+
+    .filled-rect {
+      background: yellow;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <script>
+    let isMouseDown = false;
+    let lastSpawnTime = 0;
+    const spawnDelay = 30; // milliseconds — increase this for fewer rectangles
+
+    document.addEventListener("mousedown", () => {
+      isMouseDown = true;
+    });
+
+    document.addEventListener("mouseup", () => {
+      isMouseDown = false;
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      const now = Date.now();
+      if (now - lastSpawnTime < spawnDelay) return; // skip if too soon
+      lastSpawnTime = now;
+
+      const rect = document.createElement("div");
+      rect.classList.add("rect");
+
+      if (isMouseDown) {
+        rect.classList.add("filled-rect");
+        setTimeout(() => {
+          rect.style.opacity = "0";
+          setTimeout(() => rect.remove(), 500);
+        }, 6000); // Permanent yellow
+      } else {
+        rect.classList.add("border-rect"); // Temporary black border
+        // Automatically remove after 3 seconds
+        setTimeout(() => {
+          rect.style.opacity = "0";
+          setTimeout(() => rect.remove(), 500);
+        }, 3000);
+      }
+
+      rect.style.left = `${e.pageX}px`;
+      rect.style.top = `${e.pageY}px`;
+
+      document.body.appendChild(rect);
+    });
+  </script>
+</body>
+</html>
