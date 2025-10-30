@@ -1,16 +1,71 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Cursor Trail Rectangles</title>
   <style>
     body {
       margin: 0;
       height: 100vh;
-      background: white;
+      background: rgb(13, 13, 13);
       overflow: hidden;
       cursor: crosshair;
+      font-family: "PT Serif", serif;
+  font-weight: 400;
+  font-style: normal;
+    }
+
+    /* 🎵 Title + Timer container */
+    .audio-info {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 30px;
+      box-sizing: border-box;
+      
+      color: white;
+      font-size: 16px;
+      letter-spacing: 0.5px;
+      z-index: 1000;
+    }
+
+    .left, .center, .right {
+      display: flex;
+      align-items: center;
+    }
+
+    .left {
+      gap: 10px;
+      
+    }
+
+    .timer {
+      
+      font-size: 15px;
+      color: white;
+    }
+
+    .center {
+      justify-content: center;
+      flex: 1;
+      text-align: center;
+    
+ 
+
+    }
+
+    .right {
+      text-align: right;
+      font-size: 15px;
+      flex-shrink: 0;
     }
 
     .rect {
@@ -19,26 +74,101 @@
       height: 150px;
       transform: translate(-50%, -50%);
       pointer-events: none;
-      transition: opacity 0.7s ease ;
+      opacity: 1;
     }
 
     .border-rect {
-      border: 2px solid black;
-      background: transparent;
-    }
+  background: rgba(255, 255, 255, 0.15); /* white with low opacity */
+  
+  backdrop-filter: blur(8px);             /* the blur effect */
+  -webkit-backdrop-filter: blur(8px);     /* for Safari support */
+  animation: shrinkFade 7s cubic-bezier(0.25, 1, 0.3, 1) forwards;
+}
+
 
     .filled-rect {
-      background: yellow;
       border: none;
+      background-size: cover;
+      background-position: center;
+      animation: shrinkFade 11s cubic-bezier(0.25, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes shrinkFade {
+      0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+      }
+      80% {
+        transform: translate(-50%, -50%) scale(0.8);
+        opacity: 0.99;
+      }
+      90% {
+        transform: translate(-50%, -50%) scale(0.5);
+        opacity: 0.8;
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0;
+      }
     }
   </style>
 </head>
 <body>
+  <!-- 🎧 Info and timer -->
+  <div class="audio-info">
+    <div class="left">
+      <span>now playing: "1/1"</span>
+      <span class="timer" id="timer">17:19</span>
+    </div>
+    <div class="center">Brian Eno</div>
+    <div class="right">Ambient 1: Music for Airports</div>
+  </div>
+
+  <!-- 🎶 Audio -->
+  <audio id="ambientAudio" src="../airportmusic/01 - 1-1.mp3" autoplay loop></audio>
+
   <script>
     let isMouseDown = false;
     let lastSpawnTime = 0;
-    const spawnDelay = 30; // ncrease this for fewer rectangles
+    const spawnDelay = 30;
 
+    // 🖼️ Image array
+    const images = [];
+    for (let i = 1; i <= 20; i++) {
+      images.push(`../images/acimg${i}.png`);
+    }
+    let imageIndex = 0;
+
+    // 🎵 Timer setup
+    const totalSeconds = 17 * 60 + 19; // 17:19 → 1039 seconds
+    const timerElement = document.getElementById("timer");
+    const audio = document.getElementById("ambientAudio");
+
+    let countdownInterval;
+
+    function startCountdown() {
+      clearInterval(countdownInterval);
+      countdownInterval = setInterval(() => {
+        if (audio.paused) return; // only count when playing
+
+        const elapsed = Math.floor(audio.currentTime);
+        let remaining = Math.max(totalSeconds - elapsed, 0);
+
+        const minutes = Math.floor(remaining / 60);
+        const seconds = remaining % 60;
+        timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+
+        if (remaining <= 0) clearInterval(countdownInterval);
+      }, 1000);
+    }
+
+    audio.addEventListener("play", startCountdown);
+    audio.addEventListener("pause", () => clearInterval(countdownInterval));
+    audio.addEventListener("ended", () => {
+      timerElement.textContent = "17:19"; // reset if looping stops
+    });
+
+    // 🖱️ Mouse interaction
     document.addEventListener("mousedown", () => {
       isMouseDown = true;
     });
@@ -49,7 +179,7 @@
 
     document.addEventListener("mousemove", (e) => {
       const now = Date.now();
-      if (now - lastSpawnTime < spawnDelay) return; // skip if too soon
+      if (now - lastSpawnTime < spawnDelay) return;
       lastSpawnTime = now;
 
       const rect = document.createElement("div");
@@ -57,17 +187,12 @@
 
       if (isMouseDown) {
         rect.classList.add("filled-rect");
-        setTimeout(() => {
-          rect.style.opacity = "0";
-          setTimeout(() => rect.remove(), 500);
-        }, 6000); // Permanent yellow
+        rect.style.backgroundImage = `url('${images[imageIndex]}')`;
+        imageIndex = (imageIndex + 1) % images.length;
+        setTimeout(() => rect.remove(), 6000);
       } else {
-        rect.classList.add("border-rect"); // Temporary black border
-        // Automatically remove after 3 seconds
-        setTimeout(() => {
-          rect.style.opacity = "0";
-          setTimeout(() => rect.remove(), 500);
-        }, 3000);
+        rect.classList.add("border-rect");
+        setTimeout(() => rect.remove(), 3000);
       }
 
       rect.style.left = `${e.pageX}px`;
